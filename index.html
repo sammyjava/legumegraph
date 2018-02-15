@@ -2,21 +2,68 @@
     <head>
         <meta charset="UTF-8"/>
         <title>Legume Resources Around the World</title>
-        <!-- START SIGMA IMPORTS -->
+        <!-- sigma.js -->
         <script src="sigma.js/sigma.min.js"></script>
         <script src="sigma.js/plugins/sigma.parsers.json.min.js"></script>
         <script src="sigma.js/plugins/sigma.neo4j.cypher.min.js"></script>
         <script src="sigma.js/plugins/sigma.plugins.dragNodes.min.js"></script>
-	<script src="sigma.js/plugins/sigma.layout.forceAtlas2.min.js"></script>
-	<!-- END SIGMA IMPORTS -->
+        <!-- jQuery -->
+        <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+        <!-- jQuery plugin for GET request vars -->
+        <script src="jquery.geturlparam/jquery.getUrlParam.js"></script>
+        <!-- GET variables -->
+        <script type="application/javascript">
+         var organism = $(document).getUrlParam("organism");
+         var resource = $(document).getUrlParam("resource");
+         if (organism!=null) {
+             if (organism=="") {
+                 organism = null;
+             } else {
+                 // must be a better way
+                 organism = organism.replace("+", " ");
+             }
+         }
+         if (resource!=null) {
+             if (resource=="") {
+                 resource = null;
+             } else {
+                 // must be a better way
+                 resource = resource.replace("+", " ");
+             }
+         }
+        </script>
     </head>
-    <body>
+    <body style="font-family:sans-serif; margin:10px;">
 
+
+        <h1 style="margin:0;">Legume Resources</h1>
+
+        <table>
+            <tr>
+                <td>
+                    <form method="GET" style="margin:0;">
+                        <select name="organism" id="organismSelect" onChange="submit()">
+                            <option value="">all organisms</option>
+                        </select>
+                    </form>
+                </td>
+                <td>
+                    <form method="GET" style="margin:0;">
+                        <select name="resource" id="resourceSelect" onChange="submit()">
+                            <option value="">all resources</option>
+                        </select>
+                    </form>
+                </td>
+                <td>
+                    Select "all organisms" or "all resources" to reset the menus.
+                </td>
+            </tr>
+        </table>
+        
         <div id="container">
             <style>
              #graph-container {
-                 margin: 10px;
-                 top: 30px;
+                 top: 100px;
                  bottom: 10px;
                  left: 10px;
                  right: 10px;
@@ -24,14 +71,21 @@
                  border: 2px solid gray;
              }
             </style>
-            <div style="text-align:center; font-weight:bold; font-family:sans-serif; font-size:24px;">Legume Resources</div>
             <div id="graph-container"></div>
         </div>
 
         <script type="application/javascript">
+
+         // neo4j Cypher query
+         var query = 'MATCH (n:Resource)-[r]->(m:Organism) RETURN n,r,m';
+         if (organism!=null) {
+             query = 'MATCH (n:Resource)-[r]-(m:Organism {name:"'+organism+'"}) RETURN n,r,m';
+         } else if (resource!=null) {
+             query = 'MATCH (n:Resource {name:"'+resource+'"})-[r]-(m:Organism) WHERE n.name="'+resource+'" RETURN n,r,m';
+         }
+         console.log(query);
+
          /**
-          * Here is just a basic example on how to properly display a neo4j cypher query.
-          *
           * The plugin sigma.neo4j.cypher can load a cypher query, parse the JSON response,
           * and instantiate sigma when the response is received.
           *
@@ -39,7 +93,7 @@
           */
          sigma.neo4j.cypher(
              { url: 'http://intermine.ncgr.org:7474', user: 'neo4j', password: 'xenon5416' },
-             'MATCH (n:Resource)-[r]->(m:Organism) RETURN n,r,m',
+             query,
              { container: 'graph-container' } ,
              function(s) {
 
@@ -51,10 +105,22 @@
                          s.graph.nodes()[i].label = data.name;
                          s.graph.nodes()[i].color = "#500";
                          s.graph.nodes()[i].size = 8;
+                         // add to selector
+                         var x = document.getElementById("resourceSelect");
+                         var option = document.createElement("option");
+                         option.text = data.name;
+                         x.add(option);
+                         if (resource==data.name) document.getElementById("resourceSelect").value = data.name;
                      } else if (labels[0]=="Organism") {
                          s.graph.nodes()[i].label = data.name;
                          s.graph.nodes()[i].color = "#050";
                          s.graph.nodes()[i].size = 8;
+                         // add to selector
+                         var x = document.getElementById("organismSelect");
+                         var option = document.createElement("option");
+                         option.text = data.name;
+                         x.add(option);
+                         if (organism==data.name) document.getElementById("organismSelect").value = data.name;
                      }
                  }
                  
@@ -94,8 +160,6 @@
 
                  s.refresh();
 
-		 s.startForceAtlas2();
-
              }
          );
          
@@ -115,8 +179,6 @@
              }
          );
 
-         
-         
         </script>
 
     </body>
