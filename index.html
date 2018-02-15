@@ -1,0 +1,123 @@
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Legume Resources Around the World</title>
+        <!-- START SIGMA IMPORTS -->
+        <script src="sigma.js/sigma.min.js"></script>
+        <script src="sigma.js/plugins/sigma.parsers.json.min.js"></script>
+        <script src="sigma.js/plugins/sigma.neo4j.cypher.min.js"></script>
+        <script src="sigma.js/plugins/sigma.plugins.dragNodes.min.js"></script>
+	<script src="sigma.js/plugins/sigma.layout.forceAtlas2.min.js"></script>
+	<!-- END SIGMA IMPORTS -->
+    </head>
+    <body>
+
+        <div id="container">
+            <style>
+             #graph-container {
+                 margin: 10px;
+                 top: 30px;
+                 bottom: 10px;
+                 left: 10px;
+                 right: 10px;
+                 position: absolute;
+                 border: 2px solid gray;
+             }
+            </style>
+            <div style="text-align:center; font-weight:bold; font-family:sans-serif; font-size:24px;">Legume Resources</div>
+            <div id="graph-container"></div>
+        </div>
+
+        <script type="application/javascript">
+         /**
+          * Here is just a basic example on how to properly display a neo4j cypher query.
+          *
+          * The plugin sigma.neo4j.cypher can load a cypher query, parse the JSON response,
+          * and instantiate sigma when the response is received.
+          *
+          * It based on the json parser (that's why its must be loaded).
+          */
+         sigma.neo4j.cypher(
+             { url: 'http://intermine.ncgr.org:7474', user: 'neo4j', password: 'xenon5416' },
+             'MATCH (n:Resource)-[r]->(m:Organism) RETURN n,r,m',
+             { container: 'graph-container' } ,
+             function(s) {
+
+                 // rename some stuff from the neo4j values
+                 for (var i=0; i<s.graph.nodes().length; i++) {
+                     labels = s.graph.nodes()[i].neo4j_labels;
+                     data = s.graph.nodes()[i].neo4j_data;
+                     if (labels[0]=="Resource") {
+                         s.graph.nodes()[i].label = data.name;
+                         s.graph.nodes()[i].color = "#500";
+                         s.graph.nodes()[i].size = 8;
+                     } else if (labels[0]=="Organism") {
+                         s.graph.nodes()[i].label = data.name;
+                         s.graph.nodes()[i].color = "#050";
+                         s.graph.nodes()[i].size = 8;
+                     }
+                 }
+                 
+                 // verbiage
+                 console.log('Number of nodes:'+ s.graph.nodes().length);
+                 console.log('Number of edges:'+ s.graph.edges().length);
+                 console.log(s.graph.nodes()[0]);
+                 console.log(s.graph.edges()[0]);
+                 
+                 
+                 // muck with settings
+                 s.settings({
+                     defaultLabelColor: "#555",
+                     defaultLabelSize: 16,
+                     labelColor: "default",
+		     labelColor: "node",
+		     labelSizeRatio: 4,
+		     labelThreshold: 4,
+                     defaultEdgeColor: "#005",
+                     edgeColor: "default",
+                     defaultNodeHoverColor: "#f00",
+		     nodeHoverColor: "default",
+		     minArrowSize: 5
+                 });
+
+                 // dragNodes plugin
+                 var dragListener = sigma.plugins.dragNodes(s, s.renderers[0]);
+                 dragListener.bind('startdrag', function(event) {
+		     s.stopForceAtlas2();
+                 });
+                 dragListener.bind('drag', function(event) {
+                 });
+                 dragListener.bind('drop', function(event) {
+                 });
+                 dragListener.bind('dragend', function(event) {
+                 });
+
+                 s.refresh();
+
+		 s.startForceAtlas2();
+
+             }
+         );
+         
+         // Calling neo4j to get all its relationship type
+         sigma.neo4j.getTypes(
+             { url: 'http://intermine.ncgr.org:7474', user:'neo4j', password:'xenon5416' },
+             function(types) {
+                 console.log("Relationship types:" + types);
+             }
+         );
+         
+         // Calling neo4j to get all its node label
+         sigma.neo4j.getLabels(
+             { url: 'http://intermine.ncgr.org:7474', user:'neo4j', password:'xenon5416' },
+             function(labels) {
+                 console.log("Node labels:" + labels);
+             }
+         );
+
+         
+         
+        </script>
+
+    </body>
+</html>
